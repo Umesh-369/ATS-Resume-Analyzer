@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus ATS | AI Resume Architect</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Space+Grotesk:wght@300;500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Icons (UMD build for browser support) -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <!-- Markdown Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+
+    <!-- Tailwind Config for Custom Colors/Fonts -->
+    <script>
+        // Wait for Tailwind to load
+        window.addEventListener('DOMContentLoaded', function () {
+            if (typeof tailwind !== 'undefined') {
+                tailwind.config = {
+                    theme: {
+                        extend: {
+                            fontFamily: {
+                                sans: ['Inter', 'sans-serif'],
+                                display: ['Space Grotesk', 'sans-serif'],
+                            },
+                            colors: {
+                                brand: {
+                                    50: '#f0f9ff',
+                                    100: '#e0f2fe',
+                                    400: '#38bdf8',
+                                    500: '#0ea5e9',
+                                    600: '#0284c7',
+                                    900: '#0c4a6e',
+                                },
+                                dark: {
+                                    900: '#050505',
+                                    800: '#0a0a0a',
+                                    700: '#121212',
+                                }
+                            },
+                            animation: {
+                                'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                                'float': 'float 6s ease-in-out infinite',
+                            },
+                            keyframes: {
+                                float: {
+                                    '0%, 100%': { transform: 'translateY(0)' },
+                                    '50%': { transform: 'translateY(-10px)' },
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                console.warn('Tailwind CSS not loaded');
+            }
+        });
+    </script>
+
+    <style>
+        /* Cinematic Background & Utilities */
+        body {
+            background-color: #050505;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .glow-text {
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+        }
+
+        .input-glow:focus-within {
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.3);
+            border-color: rgba(56, 189, 248, 0.5);
+        }
+
+        /* Enhanced Markdown Styles */
+        .markdown-body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .markdown-body h1,
+        .markdown-body h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.25rem;
+        }
+
+        .markdown-body h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #38bdf8;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown-body ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+            color: #cbd5e1;
+        }
+
+        .markdown-body ol {
+            list-style-type: decimal;
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+            color: #cbd5e1;
+        }
+
+        .markdown-body li {
+            margin-bottom: 0.35rem;
+        }
+
+        .markdown-body li strong {
+            color: white;
+            font-weight: 600;
+        }
+
+        .markdown-body strong {
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        .markdown-body p {
+            margin-bottom: 0.8rem;
+            line-height: 1.6;
+            color: #94a3b8;
+        }
+
+        .markdown-body blockquote {
+            border-left: 3px solid #0ea5e9;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            font-style: italic;
+            color: #94a3b8;
+            background: rgba(14, 165, 233, 0.05);
+            padding: 0.5rem 0.5rem 0.5rem 1rem;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .markdown-body code {
+            font-family: monospace;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+            color: #e2e8f0;
+        }
+
+        /* Loader */
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #FFF;
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        .loader::after {
+            content: '';
+            box-sizing: border-box;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid;
+            border-color: #0ea5e9 transparent;
+        }
+
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #262626;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #404040;
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen flex flex-col relative">
+
+    <!-- Background Canvas -->
+    <canvas id="canvas-bg"></canvas>
+
+    <!-- Header -->
+    <header class="w-full py-6 border-b border-white/5 bg-black/20 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-brand-500/10 rounded-lg border border-brand-500/20">
+                    <i data-lucide="cpu" class="w-6 h-6 text-brand-400"></i>
+                </div>
+                <h1 class="text-2xl font-display font-bold tracking-tight text-white">
+                    <span class="text-brand-400">ATS</span>
+                </h1>
+            </div>
+            <div class="hidden md:flex items-center gap-6 text-sm font-medium text-gray-400">
+                <span class="text-brand-400 cursor-default">Analyzer Active</span>
+                <span>v2.5 Flash Integration</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center justify-center p-6 relative z-10">
+
+        <!-- Hero Text -->
+        <div class="text-center mb-12 animate-float">
+            <h2
+                class="text-5xl md:text-6xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-gray-200 to-gray-500 mb-4 glow-text">
+                Optimize Your Career Potential
+            </h2>
+            <p class="text-gray-400 max-w-2xl mx-auto text-lg font-light">
+                Leverage advanced Gemini AI to deconstruct your resume and align it perfectly with your target job
+                description.
+            </p>
+        </div>
+
+        <!-- Input Form Container -->
+        <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+
+            <!-- Resume Upload -->
+            <div class="glass-panel rounded-2xl p-8 flex flex-col transition-all duration-300 hover:bg-white/5">
+                <div class="flex items-center gap-3 mb-6">
+                    <i data-lucide="file-text" class="text-brand-400"></i>
+                    <h3 class="text-xl font-semibold text-white">Upload Resume</h3>
+                </div>
+
+                <div id="drop-zone"
+                    class="flex-grow border-2 border-dashed border-gray-700 rounded-xl bg-black/20 hover:border-brand-500/50 hover:bg-brand-500/5 transition-all cursor-pointer flex flex-col items-center justify-center p-8 text-center group relative overflow-hidden">
+                    <input type="file" id="resume-upload"
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".pdf">
+                    <div
+                        class="z-10 flex flex-col items-center pointer-events-none transition-transform group-hover:scale-105">
+                        <div
+                            class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-4 group-hover:bg-brand-500/20 transition-colors">
+                            <i data-lucide="upload-cloud" class="w-6 h-6 text-gray-400 group-hover:text-brand-400"></i>
+                        </div>
+                        <p class="text-gray-300 font-medium mb-1">Click to upload or drag PDF</p>
+                        <p class="text-gray-600 text-sm">Max file size 10MB</p>
+                    </div>
+                    <div id="file-name-display"
+                        class="hidden absolute bottom-4 left-0 right-0 text-center text-brand-400 text-sm font-medium bg-black/60 py-1 backdrop-blur-md mx-4 rounded">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Description -->
+            <div class="glass-panel rounded-2xl p-8 flex flex-col transition-all duration-300 hover:bg-white/5">
+                <div class="flex items-center gap-3 mb-6">
+                    <i data-lucide="briefcase" class="text-brand-400"></i>
+                    <h3 class="text-xl font-semibold text-white">Job Description</h3>
+                </div>
+
+                <div class="flex-grow relative input-glow rounded-xl">
+                    <textarea id="job-description"
+                        class="w-full h-full min-h-[200px] bg-black/20 border border-gray-700 rounded-xl p-4 text-gray-300 placeholder-gray-600 focus:outline-none focus:border-brand-500/50 resize-none font-sans text-sm leading-relaxed"
+                        placeholder="Paste the job description, responsibilities, and requirements here..."></textarea>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Action Button -->
+        <div class="text-center mb-16">
+            <button onclick="analyzeResume()"
+                class="group relative px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-full transition-all duration-300 shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:shadow-[0_0_40px_rgba(14,165,233,0.5)] overflow-hidden">
+                <span class="relative z-10 flex items-center gap-2">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                    Initiate Analysis
+                </span>
+                <div
+                    class="absolute inset-0 bg-gradient-to-r from-brand-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                </div>
+            </button>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay"
+            class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex flex-col items-center justify-center">
+            <span class="loader mb-6"></span>
+            <h3 class="text-2xl font-display font-bold text-white mb-2">Processing Data</h3>
+            <p class="text-brand-400 animate-pulse">Consulting AI Models...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" class="hidden w-full max-w-7xl animate-fade-in-up">
+
+            <div class="flex items-center gap-4 mb-8">
+                <div class="h-px flex-grow bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
+                <h2 class="text-2xl font-display font-bold text-white">Analysis Report</h2>
+                <div class="h-px flex-grow bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- Card 1: Resume Parse -->
+                <div class="glass-panel rounded-xl p-6 border-t-4 border-t-purple-500">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-lg text-white">Resume Extraction</h3>
+                        <i data-lucide="user" class="text-purple-500"></i>
+                    </div>
+                    <div id="resume-result" class="markdown-body text-sm text-gray-400 h-96 overflow-y-auto pr-2">
+                        <!-- Content injected here -->
+                    </div>
+                </div>
+
+                <!-- Card 2: ATS Match (Center/Highlight) -->
+                <div
+                    class="glass-panel rounded-xl p-6 border-t-4 border-t-brand-500 transform lg:-translate-y-4 lg:shadow-[0_0_30px_rgba(14,165,233,0.15)] bg-gradient-to-b from-gray-900 to-black">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-lg text-white">ATS Compatibility</h3>
+                        <i data-lucide="crosshair" class="text-brand-500"></i>
+                    </div>
+                    <div id="ats-result" class="markdown-body text-sm text-gray-300 h-[26rem] overflow-y-auto pr-2">
+                        <!-- Content injected here -->
+                    </div>
+                </div>
+
+                <!-- Card 3: JD Parse -->
+                <div class="glass-panel rounded-xl p-6 border-t-4 border-t-emerald-500">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-lg text-white">Job Analysis</h3>
+                        <i data-lucide="file-search" class="text-emerald-500"></i>
+                    </div>
+                    <div id="jd-result" class="markdown-body text-sm text-gray-400 h-96 overflow-y-auto pr-2">
+                        <!-- Content injected here -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="py-8 text-center text-gray-600 text-sm relative z-10">
+        <p>© 2024 Nexus ATS. Powered by Google Gemini 2.5.</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Use DOMContentLoaded to ensure libraries are loaded
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize Lucide Icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            } else {
+                console.error("Lucide icons library not loaded.");
+            }
+
+            // 1. File Upload Logic
+            const fileInput = document.getElementById('resume-upload');
+            const fileNameDisplay = document.getElementById('file-name-display');
+            const dropZone = document.getElementById('drop-zone');
+
+            if (fileInput && fileNameDisplay && dropZone) {
+                fileInput.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        const name = e.target.files[0].name;
+                        fileNameDisplay.textContent = name;
+                        fileNameDisplay.classList.remove('hidden');
+                        dropZone.classList.add('border-brand-500', 'bg-brand-500/10');
+                    }
+                });
+            }
+
+            // 2. Cinematic Particle Background
+            const canvas = document.getElementById('canvas-bg');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                let particles = [];
+
+                function resizeCanvas() {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                }
+                window.addEventListener('resize', resizeCanvas);
+                resizeCanvas();
+
+                class Particle {
+                    constructor() {
+                        this.x = Math.random() * canvas.width;
+                        this.y = Math.random() * canvas.height;
+                        this.size = Math.random() * 2;
+                        this.speedX = Math.random() * 0.5 - 0.25;
+                        this.speedY = Math.random() * 0.5 - 0.25;
+                        this.opacity = Math.random() * 0.5;
+                    }
+                    update() {
+                        this.x += this.speedX;
+                        this.y += this.speedY;
+                        if (this.x > canvas.width) this.x = 0;
+                        if (this.x < 0) this.x = canvas.width;
+                        if (this.y > canvas.height) this.y = 0;
+                        if (this.y < 0) this.y = canvas.height;
+                    }
+                    draw() {
+                        ctx.fillStyle = `rgba(56, 189, 248, ${this.opacity})`; // Brand color
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                function initParticles() {
+                    for (let i = 0; i < 100; i++) {
+                        particles.push(new Particle());
+                    }
+                }
+
+                function animateParticles() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    for (let i = 0; i < particles.length; i++) {
+                        particles[i].update();
+                        particles[i].draw();
+
+                        // Connect particles if close
+                        for (let j = i; j < particles.length; j++) {
+                            const dx = particles[i].x - particles[j].x;
+                            const dy = particles[i].y - particles[j].y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            if (distance < 100) {
+                                ctx.beginPath();
+                                ctx.strokeStyle = `rgba(56, 189, 248, ${0.1 - distance / 1000})`;
+                                ctx.lineWidth = 1;
+                                ctx.moveTo(particles[i].x, particles[i].y);
+                                ctx.lineTo(particles[j].x, particles[j].y);
+                                ctx.stroke();
+                            }
+                        }
+                    }
+                    requestAnimationFrame(animateParticles);
+                }
+                initParticles();
+                animateParticles();
+            }
+        });
+
+        // 3. Main Analysis Logic (Global scope for onclick)
+        async function analyzeResume() {
+            const fileInput = document.getElementById('resume-upload');
+            const jobDescInput = document.getElementById('job-description');
+            const loader = document.getElementById('loading-overlay');
+            const resultsSection = document.getElementById('results-section');
+
+            // Validation
+            if (!fileInput.files.length) {
+                alert("Please upload a Resume (PDF).");
+                return;
+            }
+            const jobDesc = jobDescInput.value;
+            if (!jobDesc.trim()) {
+                alert("Please paste a Job Description.");
+                return;
+            }
+
+            // Show Loader
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+            resultsSection.classList.add('hidden');
+
+            // Prepare Data for Multipart/Form-Data
+            const formData = new FormData();
+            formData.append('resume', fileInput.files[0]);
+            formData.append('job_description', jobDesc);
+
+            try {
+                // Fetch from Backend
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const responseText = await response.text();
+                let data;
+
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    console.error("Non-JSON response received:", responseText);
+                    throw new Error(`Server returned unexpected format. Status: ${response.status}`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Analysis failed');
+                }
+
+                // Success - Render Content
+                if (typeof marked !== 'undefined') {
+                    document.getElementById('resume-result').innerHTML = marked.parse(data.parsed_resume);
+                    document.getElementById('jd-result').innerHTML = marked.parse(data.parsed_job_description);
+                    document.getElementById('ats-result').innerHTML = marked.parse(data.ats_result);
+                } else {
+                    document.getElementById('resume-result').textContent = data.parsed_resume;
+                    document.getElementById('jd-result').textContent = data.parsed_job_description;
+                    document.getElementById('ats-result').textContent = data.ats_result;
+                }
+
+                // Show Results
+                loader.classList.add('hidden');
+                loader.classList.remove('flex');
+                resultsSection.classList.remove('hidden');
+
+                // Smooth scroll to results
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error(error);
+                alert("Error: " + error.message);
+                loader.classList.add('hidden');
+                loader.classList.remove('flex');
+            }
+        }
+    </script>
+</body>
+
+</html>
