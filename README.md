@@ -16,7 +16,7 @@ It analyzes resumes against job descriptions and provides ATS score, keyword mat
 - ATS score calculation
 - Keyword matching
 - Resume improvement tips
-- Clean UI
+- Clean and Professional UI
 
 ## ⚙️ Setup Instructions
 ```bash
