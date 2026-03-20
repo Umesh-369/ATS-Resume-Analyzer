@@ -11,7 +11,7 @@ It analyzes resumes against job descriptions and provides ATS score, keyword mat
 - PyPDF2
 
 ## ✨ Features
-- Upload resume (PDF)
+- Upload resume(PDF)
 - Paste job description
 - ATS score calculation
 - Keyword matching
